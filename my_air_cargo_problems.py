@@ -1,3 +1,6 @@
+import copy
+import itertools
+
 from aimacode.logic import PropKB
 from aimacode.planning import Action
 from aimacode.search import (
@@ -32,6 +35,14 @@ class AirCargoProblem(Problem):
         self.planes = planes
         self.airports = airports
         self.actions_list = self.get_actions()
+        self.actions_no_preconds = self.get_actions_no_preconds()
+
+    def get_actions_no_preconds(self):
+        actions = [ copy.copy(a) for a in self.actions_list ]
+        for a in actions:
+            a.precond_pos = []
+            a.precond_neg = []
+        return actions
 
     def get_actions(self):
         '''
@@ -61,11 +72,13 @@ class AirCargoProblem(Problem):
             for a in self.airports:
                 for p in self.planes:
                     for c in self.cargos:
-                        precond_pos = [expr("At({}, {})".format(c, a)),
-                                       expr("At({}, {})".format(p, a)),
-                                        ]
-                        precond_neg = [expr("In({}, {})".format(c, p)),
-                                        ]
+                        precond_pos = [
+                            expr("At({}, {})".format(c, a)),
+                            expr("At({}, {})".format(p, a)),
+                            ]
+                        precond_neg = [
+                            expr("In({}, {})".format(c, p)),
+                            ]
                         effect_add = [expr("In({}, {})".format(c, p))]
                         effect_rem = [expr("At({}, {})".format(c, a))]
                         action = Action(expr("Load({}, {}, {})".format(c, p, a)),
@@ -83,8 +96,10 @@ class AirCargoProblem(Problem):
             for a in self.airports:
                 for p in self.planes:
                     for c in self.cargos:
-                        precond_pos = [expr("In({}, {})".format(c, p)),
-                                       expr("At({}, {})".format(p, a))]
+                        precond_pos = [
+                            expr("In({}, {})".format(c, p)),
+                            expr("At({}, {})".format(p, a)),
+                            ]
                         precond_neg = []
                         effect_add = [expr("At({}, {})".format(c, a))]
                         effect_rem = [expr("In({}, {})".format(c, p))]
@@ -104,8 +119,9 @@ class AirCargoProblem(Problem):
                 for to in self.airports:
                     if fr != to:
                         for p in self.planes:
-                            precond_pos = [expr("At({}, {})".format(p, fr)),
-                                           ]
+                            precond_pos = [
+                                expr("At({}, {})".format(p, fr)),
+                                ]
                             precond_neg = []
                             effect_add = [expr("At({}, {})".format(p, to))]
                             effect_rem = [expr("At({}, {})".format(p, fr))]
@@ -182,9 +198,14 @@ class AirCargoProblem(Problem):
         conditions by ignoring the preconditions required for an action to be
         executed.
         '''
-        # TODO implement (see Russell-Norvig Ed-3 10.2.3  or Russell-Norvig Ed-2 11.2)
-        count = 0
-        return count
+        for count in range(len(self.actions_no_preconds)):
+            for action_seq in itertools.permutations(self.actions_no_preconds, count + 1):
+                state = copy.copy(node.state)
+                for a in action_seq:
+                    state = self.result(state, a)
+                if self.goal_test(state):
+                    return count + 1
+        return 0
 
 
 def air_cargo_p1() -> AirCargoProblem:
