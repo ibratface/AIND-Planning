@@ -198,14 +198,18 @@ class AirCargoProblem(Problem):
         conditions by ignoring the preconditions required for an action to be
         executed.
         '''
-        for count in range(len(self.actions_no_preconds)):
-            for action_seq in itertools.permutations(self.actions_no_preconds, count + 1):
-                state = copy.copy(node.state)
-                for a in action_seq:
-                    state = self.result(state, a)
-                if self.goal_test(state):
-                    return count + 1
-        return 0
+        if 0: # proper way
+            for count in range(len(self.actions_no_preconds)):
+                for action_seq in itertools.permutations(self.actions_no_preconds, count + 1):
+                    state = copy.copy(node.state)
+                    for a in action_seq:
+                        state = self.result(state, a)
+                    if self.goal_test(state):
+                        return count + 1
+        else: # shortcut assuming 1 clause per action
+            kb = PropKB()
+            kb.tell(decode_state(node.state, self.state_map).pos_sentence())
+            return sum(1 for clause in self.goal if clause not in kb.clauses)
 
 
 def air_cargo_p1() -> AirCargoProblem:

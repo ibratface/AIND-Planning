@@ -520,9 +520,10 @@ class PlanningGraph():
         level_sum = 0
         #  implement
         # for each goal in the problem, determine the level cost, then add them together
-        for g in self.problem.goal:
-            for i, level in enumerate(self.s_levels):
-                if PgNode_s(g, True) in level:
-                    level_sum += i
-                    break
+        goals = set(PgNode_s(g, True) for g in self.problem.goal)
+        goals_len = len(goals)
+        for i, level in enumerate(self.s_levels):
+            goals.difference_update(level)
+            level_sum += i * (goals_len - len(goals))
+            goals_len = len(goals)
         return level_sum
